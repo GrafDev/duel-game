@@ -1,14 +1,14 @@
-// src/components/ScoreBoard.tsx
+// src/components/ScoreBoard/ScoreBoard.tsx
 
 import React from 'react';
 import styles from './ScoreBoard.module.css';
-import { useGameContext } from '../../hooks/useGameContext.tsx';
-
+import { useGameContext } from '../../contexts/GameContext';
 
 interface ScoreBoardProps {
     handleExit: () => void;
 }
-const ScoreBoard: React.FC<ScoreBoardProps> = ({ handleExit })  => {
+
+const ScoreBoard: React.FC<ScoreBoardProps> = ({ handleExit }) => {
     const { gameState } = useGameContext();
 
     return (
@@ -18,9 +18,8 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ handleExit })  => {
             </div>
             <button className={styles.exit_button} onClick={handleExit}>Exit</button>
             <div className={styles.score}>
-                <p>Попаданий:{gameState.score.right}</p>
+                <p>Попаданий: {gameState.score.right}</p>
             </div>
-
         </div>
     );
 };

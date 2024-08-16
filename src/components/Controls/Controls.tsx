@@ -1,34 +1,37 @@
-// src/components/Controls.tsx
+// src/components/Controls/Controls.tsx
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import styles from './Controls.module.css';
-import { useGameContext } from '../../hooks/useGameContext.tsx';
-import ControlSlider from "./ControlSlider.tsx";
+import { useGameContext } from '../../contexts/GameContext';
+import ControlSlider from "./ControlSlider";
+import { PlayerSide } from '../../types';
 
 const Controls: React.FC = () => {
     const { gameState, updateGameState } = useGameContext();
 
-    const handleSpeedChange = (side: 'left' | 'right', value: number) => {
-        updateGameState({
+    const handleSpeedChange = useCallback((side: PlayerSide, value: number) => {
+        updateGameState(prevState => ({
+            ...prevState,
             [side === 'left' ? 'leftHero' : 'rightHero']: {
-                ...gameState[side === 'left' ? 'leftHero' : 'rightHero'],
+                ...prevState[side === 'left' ? 'leftHero' : 'rightHero'],
                 speed: value
             }
-        });
-    };
+        }));
+    }, [updateGameState]);
 
-    const handleFireRateChange = (side: 'left' | 'right', value: number) => {
-        updateGameState({
+    const handleFireRateChange = useCallback((side: PlayerSide, value: number) => {
+        updateGameState(prevState => ({
+            ...prevState,
             [side === 'left' ? 'leftHero' : 'rightHero']: {
-                ...gameState[side === 'left' ? 'leftHero' : 'rightHero'],
+                ...prevState[side === 'left' ? 'leftHero' : 'rightHero'],
                 fireRate: value
             }
-        });
-    };
+        }));
+    }, [updateGameState]);
 
     return (
-        <div className="controls">
-            <div className={styles.sliders__left} >
+        <div className={styles.sliders}>
+            <div className={styles.sliders_left}>
                 <ControlSlider
                     label="Скорость левого героя"
                     value={gameState.leftHero.speed}
@@ -45,7 +48,7 @@ const Controls: React.FC = () => {
                     step={0.1}
                 />
             </div>
-            <div className={styles.sliders__right}>
+            <div className={styles.sliders_right}>
                 <ControlSlider
                     label="Скорость правого героя"
                     value={gameState.rightHero.speed}

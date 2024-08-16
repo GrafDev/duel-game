@@ -1,27 +1,43 @@
-import { useCallback } from 'react';
-import { useGameContext } from '../contexts/GameContext';
+// src/hooks/usePlayer.ts
+import { useEffect } from 'react';
+import { useGameContext } from './useGameContext';
+import { PlayerSide, Position } from '../types';
 
-export const usePlayer = () => {
-    const { gameState, setGameState } = useGameContext();
+export const usePlayer = (side: PlayerSide) => {
+    const { gameState, updateGameState, canvasSize } = useGameContext();
 
-    const movePlayer = useCallback((direction: 'up' | 'down') => {
-        setGameState(prevState => ({
-            ...prevState,
-            player: {
-                ...prevState.player,
-                y: direction === 'up'
-                    ? Math.max(0, prevState.player.y - prevState.player.speed)
-                    : Math.min(600, prevState.player.y + prevState.player.speed)
-            }
-        }));
-    }, [setGameState]);
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const canvas = document.querySelector('canvas');
+            if (!canvas) return;
 
-    const shootSpell = useCallback(() => {
-        setGameState(prevState => ({
-            ...prevState,
-            spells: [...prevState.spells, { x: prevState.player.x, y: prevState.player.y, belongsTo: 'player' }]
-        }));
-    }, [setGameState]);
+            const rect = canvas.getBoundingClientRect();
+            const mousePosition: Position = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
 
-    return { player: gameState.player, movePlayer, shootSpell };
+            const hero = gameState[side === 'left' ? 'leftHero' : 'rightHero'];
+            const newY = Math.max(
+                hero.size.height / 2,
+                Math.min(mousePosition.y, canvasSize.height - hero.size.height / 2)
+            );
+
+            updateGameState({
+                [side === 'left' ? 'leftHero' : 'rightHero']: {
+                    ...hero,
+                    position: {
+                        x: hero.position.x,
+                        y: newY
+                    }
+                }
+            });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+        };
+    }, [gameState, updateGameState, canvasSize, side]);
 };

@@ -1,0 +1,26 @@
+.scoreboard {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 5px;
+    align-items: center;
+    color: #1a1a1a;
+}
+
+.score {
+    text-align: center;
+    flex: 1;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+
+.exit_button {
+    background-color: #ffb702;
+    color: white;
+    border: none;
+    height: 80%;
+    width: 200px;
+    border-radius: 5px;
+    cursor: pointer;
+}

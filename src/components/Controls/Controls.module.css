@@ -1,0 +1,27 @@
+
+.sliders__left {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    height: 100%;
+    width: 100%;
+}
+
+.sliders__right {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    height: 100%;
+    width: 100%;
+}
+.control__slider {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    color: #1a1a1a;
+    height: 100%;
+    width: 100%;
+}

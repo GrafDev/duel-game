@@ -1,14 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Position, Hero, Spell, GameState } from '../types';
+import { Position, Hero, Spell, GameState, VirtualField, Fireball } from '../types';
 import { useGameContext } from "./useGameContext";
 import { usePlayer } from "./usePlayer";
 
-interface VirtualField {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-}
+const FIREBALL_SPEED = 5;
+const FIREBALL_SIZE = 10;
 
 export const useCanvas = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,6 +14,7 @@ export const useCanvas = () => {
     const leftHeroDirectionRef = useRef<1 | -1>(1);
     const rightHeroDirectionRef = useRef<1 | -1>(1);
     const mousePositionRef = useRef<Position>({ x: 0, y: 0 });
+    const fireballsRef = useRef<Fireball[]>([]);
     const { drawMouseLine } = usePlayer(gameState.playerSide);
 
     const initializeVirtualFields = useCallback(() => {
@@ -68,15 +65,45 @@ export const useCanvas = () => {
     }, []);
 
     const adjustVirtualField = useCallback((hero: Hero, virtualField: VirtualField, mouseY: number) => {
+        const minFieldHeight = hero.size.width * 2; // Минимальная высота поля - два диаметра круга
+        const heroRadius = hero.size.width / 2;
+
+        let newTop = virtualField.top;
+        let newBottom = virtualField.bottom;
+
+        // Проверяем, находится ли мышь на круге
+        const mouseOnCircle = Math.abs(mouseY - hero.position.y) <= heroRadius;
+
         if (hero.position.y > mouseY) {
             // Круг игрока ниже курсора мыши
-            virtualField.top = mouseY;
-            virtualField.bottom = canvasSize.height;
+            if (mouseOnCircle) {
+                newTop = hero.position.y - heroRadius; // Граница не заходит в круг
+            } else {
+                newTop = Math.min(mouseY, canvasSize.height - minFieldHeight);
+            }
+            newBottom = canvasSize.height;
         } else {
             // Круг игрока выше курсора мыши
-            virtualField.bottom = mouseY;
-            virtualField.top = 0;
+            newTop = 0;
+            if (mouseOnCircle) {
+                newBottom = hero.position.y + heroRadius; // Граница не заходит в круг
+            } else {
+                newBottom = Math.max(mouseY, minFieldHeight);
+            }
         }
+
+        // Проверяем, чтобы расстояние между границами не было меньше минимального
+        if (newBottom - newTop < minFieldHeight) {
+            if (hero.position.y > mouseY) {
+                newTop = newBottom - minFieldHeight;
+            } else {
+                newBottom = newTop + minFieldHeight;
+            }
+        }
+
+        virtualField.top = newTop;
+        virtualField.bottom = newBottom;
+
         return virtualField;
     }, [canvasSize.height]);
 
@@ -89,6 +116,40 @@ export const useCanvas = () => {
         }
 
         return { ...hero, position: { ...hero.position, y: newY } };
+    }, []);
+
+    const handleMouseClick = useCallback((e: MouseEvent) => {
+        if (e.button !== 0) return; // Проверяем, что это левая кнопка мыши
+
+        const playerSide = gameState.playerSide;
+        const hero = playerSide === 'left' ? gameState.leftHero : gameState.rightHero;
+
+        const newFireball: Fireball = {
+            position: { ...hero.position },
+            direction: playerSide === 'left' ? 'right' : 'left',
+            speed: FIREBALL_SPEED
+        };
+
+        fireballsRef.current.push(newFireball);
+    }, [gameState.playerSide, gameState.leftHero, gameState.rightHero]);
+
+    const updateFireballs = useCallback(() => {
+        fireballsRef.current = fireballsRef.current.filter(fireball => {
+            if (fireball.direction === 'right') {
+                fireball.position.x += fireball.speed;
+                return fireball.position.x < canvasSize.width;
+            } else {
+                fireball.position.x -= fireball.speed;
+                return fireball.position.x > 0;
+            }
+        });
+    }, [canvasSize.width]);
+
+    const drawFireball = useCallback((ctx: CanvasRenderingContext2D, fireball: Fireball) => {
+        ctx.fillStyle = 'orange';
+        ctx.beginPath();
+        ctx.arc(fireball.position.x, fireball.position.y, FIREBALL_SIZE / 2, 0, Math.PI * 2);
+        ctx.fill();
     }, []);
 
     const updateHeroPositions = useCallback(() => {
@@ -121,7 +182,9 @@ export const useCanvas = () => {
             leftHero,
             rightHero
         }));
-    }, [gameState, updateGameState, moveHero, adjustVirtualField, canvasSize.height]);
+
+        updateFireballs();
+    }, [gameState, updateGameState, moveHero, adjustVirtualField, canvasSize.height, updateFireballs]);
 
     useEffect(() => {
         initializeVirtualFields();
@@ -156,6 +219,7 @@ export const useCanvas = () => {
             drawHero(ctx, gameState.leftHero);
             drawHero(ctx, gameState.rightHero);
             gameState.spells.forEach(spell => drawSpell(ctx, spell));
+            fireballsRef.current.forEach(fireball => drawFireball(ctx, fireball));
             drawMouseLine(ctx);
         };
 
@@ -166,13 +230,15 @@ export const useCanvas = () => {
         };
 
         canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('click', handleMouseClick);
         const animationId = requestAnimationFrame(gameLoop);
 
         return () => {
             canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('click', handleMouseClick);
             cancelAnimationFrame(animationId);
         };
-    }, [gameState, drawHero, drawSpell, drawMouseLine, handleMouseMove, updateHeroPositions]);
+    }, [gameState, drawHero, drawSpell, drawFireball, drawMouseLine, handleMouseMove, handleMouseClick, updateHeroPositions]);
 
     return canvasRef;
 };

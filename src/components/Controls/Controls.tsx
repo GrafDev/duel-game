@@ -2,9 +2,9 @@
 
 import React, { useCallback } from 'react';
 import styles from './Controls.module.css';
-import { useGameContext } from '../../contexts/GameContext';
 import ControlSlider from "./ControlSlider";
 import { PlayerSide } from '../../types';
+import {useGameContext} from "../../hooks/useGameContext.tsx";
 
 const Controls: React.FC = () => {
     const { gameState, updateGameState } = useGameContext();

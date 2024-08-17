@@ -1,12 +1,12 @@
 // src/components/Game.tsx
 import React, { useState, useCallback } from 'react';
-import { useGameContext } from '../contexts/GameContext';
 import Canvas from './Canvas/Canvas';
 import ScoreBoard from './ScoreBoard/ScoreBoard';
 import PlayerSelection from './PlayerSelection/PlayerSelection';
 import Controls from "./Controls/Controls";
 import { PlayerSide } from '../types';
 import styles from './Game.module.css';
+import {useGameContext} from "../hooks/useGameContext.tsx";
 
 const Game: React.FC = () => {
     const { updateGameState, canvasSize } = useGameContext();

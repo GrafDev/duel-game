@@ -2,7 +2,7 @@
 
 import React from 'react';
 import styles from './ScoreBoard.module.css';
-import { useGameContext } from '../../contexts/GameContext';
+import {useGameContext} from "../../hooks/useGameContext.tsx";
 
 interface ScoreBoardProps {
     handleExit: () => void;

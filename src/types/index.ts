@@ -1,5 +1,3 @@
-// src/types/index.ts
-
 export type Position = {
     x: number;
     y: number;
@@ -17,6 +15,7 @@ export type Hero = {
     spellColor: string;
     speed: number;
     fireRate: number;
+    direction: 1 | -1;
 };
 
 export type Spell = {
@@ -36,11 +35,7 @@ export type GameState = {
         left: number;
         right: number;
     };
-    playerSide: PlayerSide; // Добавляем это свойство
+    playerSide: PlayerSide;
 };
 
-export type GameContextType = {
-    gameState: GameState;
-    updateGameState: (newState: Partial<GameState>) => void;
-    canvasSize: Size;
-};
+// Удаляем дублирующее определение GameContextType, так как оно уже определено в GameContext.tsx

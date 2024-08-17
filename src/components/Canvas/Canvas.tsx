@@ -1,12 +1,12 @@
 // src/components/Canvas/Canvas.tsx
 import React from 'react';
 import { useCanvas } from '../../hooks/useCanvas';
-import { useGameContext } from '../../contexts/GameContext';
+import { useGameContext } from '../../hooks/useGameContext';
 import styles from './Canvas.module.css';
 
 const Canvas: React.FC = () => {
-    const { gameState, canvasSize } = useGameContext();
-    const canvasRef = useCanvas(gameState.playerSide);
+    const { canvasSize } = useGameContext();
+    const canvasRef = useCanvas();
 
     return (
         <canvas

@@ -1,14 +1,15 @@
-// src/contexts/GameContext.tsx
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { GameState, Hero, PlayerSide } from '../types';
+import React, { createContext, useState, useCallback, useMemo } from 'react';
+import { GameState, Hero, PlayerSide, Size } from '../types';
 
-type GameContextType = {
+export type GameContextType = {
     gameState: GameState;
-    updateGameState: (updater: GameState | ((prevState: GameState) => GameState)) => void;
-    canvasSize: { width: number; height: number };
+    updateGameState: (updater: Partial<GameState> | ((prevState: GameState) => GameState)) => void;
+    canvasSize: Size;
+    playerSide: PlayerSide;
+    setPlayerSide: (side: PlayerSide) => void;
 };
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const initialGameState: GameState = {
     leftHero: {
@@ -17,7 +18,8 @@ const initialGameState: GameState = {
         color: 'blue',
         spellColor: 'lightblue',
         speed: 5,
-        fireRate: 1
+        fireRate: 1,
+        direction: 1
     } as Hero,
     rightHero: {
         position: { x: 750, y: 300 },
@@ -25,16 +27,17 @@ const initialGameState: GameState = {
         color: 'red',
         spellColor: 'orange',
         speed: 5,
-        fireRate: 1
+        fireRate: 1,
+        direction: 1
     } as Hero,
     spells: [],
     score: { left: 0, right: 0 },
-    playerSide: 'left' as PlayerSide
+    playerSide: 'left' // Добавляем это свойство в initialGameState
 };
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [gameState, setGameState] = useState<GameState>(initialGameState);
-    const [canvasSize] = useState({ width: 800, height: 600 });
+    const [canvasSize] = useState<Size>({ width: 800, height: 600 });
 
     const updateGameState = useCallback((updater: Partial<GameState> | ((prevState: GameState) => GameState)) => {
         setGameState(prevState => {
@@ -46,23 +49,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }, []);
 
+    const setPlayerSide = useCallback((side: PlayerSide) => {
+        setGameState(prevState => ({ ...prevState, playerSide: side }));
+    }, []);
+
     const contextValue = useMemo(() => ({
         gameState,
         updateGameState,
-        canvasSize
-    }), [gameState, updateGameState, canvasSize]);
+        canvasSize,
+        playerSide: gameState.playerSide,
+        setPlayerSide
+    }), [gameState, updateGameState, canvasSize, setPlayerSide]);
 
     return (
         <GameContext.Provider value={contextValue}>
             {children}
         </GameContext.Provider>
     );
-};
-
-export const useGameContext = (): GameContextType => {
-    const context = useContext(GameContext);
-    if (context === undefined) {
-        throw new Error('useGameContext must be used within a GameProvider');
-    }
-    return context;
 };

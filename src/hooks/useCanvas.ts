@@ -3,7 +3,6 @@ import { useGameContext } from './useGameContext';
 import { useMouseInteraction } from './useMouseInteraction';
 import { Position, Hero } from '../types';
 
-// Определение VirtualField внутри файла
 interface VirtualField {
     left: number;
     right: number;
@@ -43,6 +42,23 @@ export const useCanvas = () => {
         ctx.fillStyle = hero.color;
         ctx.beginPath();
         ctx.arc(hero.position.x, hero.position.y, hero.size.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }, []);
+
+    const drawDirectionIndicator = useCallback((ctx: CanvasRenderingContext2D, hero: Hero, direction: 1 | -1, virtualField: VirtualField) => {
+        const indicatorRadius = 10;
+        const indicatorX = hero.position.x;
+        let indicatorY;
+
+        if (direction === 1) {
+            indicatorY = virtualField.bottom - indicatorRadius;
+        } else {
+            indicatorY = virtualField.top + indicatorRadius;
+        }
+
+        ctx.fillStyle = 'green';
+        ctx.beginPath();
+        ctx.arc(indicatorX, indicatorY, indicatorRadius, 0, Math.PI * 2);
         ctx.fill();
     }, []);
 
@@ -157,6 +173,8 @@ export const useCanvas = () => {
 
             drawHero(ctx, gameState.leftHero);
             drawHero(ctx, gameState.rightHero);
+            drawDirectionIndicator(ctx, gameState.leftHero, leftHeroDirectionRef.current, leftVirtualFieldRef.current);
+            drawDirectionIndicator(ctx, gameState.rightHero, rightHeroDirectionRef.current, rightVirtualFieldRef.current);
             drawMouseLine(ctx);
         };
 
@@ -172,7 +190,7 @@ export const useCanvas = () => {
         return () => {
             cancelAnimationFrame(animationId);
         };
-    }, [gameState, drawHero, drawMouseLine, getMousePosition, updateHeroPositions]);
+    }, [gameState, drawHero, drawMouseLine, getMousePosition, updateHeroPositions, drawDirectionIndicator]);
 
     return canvasRef;
 };

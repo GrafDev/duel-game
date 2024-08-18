@@ -1,13 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useGameContext } from './useGameContext';
 import { useMouseInteraction } from './useMouseInteraction';
-import { PlayerSide, Hero } from '../types';
+import {  Hero } from '../types';
 
 const BOUNCE_COOLDOWN = 1200;
 const MOUSE_LINE_HEIGHT = 20;
 const MOUSE_LINE_WIDTH = 40;
 
-export const usePlayer = (playerSide: PlayerSide) => {
+export const usePlayer = () => {
     const { gameState, updateGameState, canvasSize } = useGameContext();
     const { getMousePosition } = useMouseInteraction();
     const directionRef = useRef<1 | -1>(1);
@@ -57,12 +57,12 @@ export const usePlayer = (playerSide: PlayerSide) => {
             const deltaTime = time - lastTime;
             lastTime = time;
 
-            const hero = gameState[playerSide === 'left' ? 'leftHero' : 'rightHero'];
+            const hero = gameState[gameState.playerSide === 'left' ? 'leftHero' : 'rightHero'];
             const updatedHero = moveHero(hero, deltaTime);
 
             updateGameState(prevState => ({
                 ...prevState,
-                [playerSide === 'left' ? 'leftHero' : 'rightHero']: updatedHero
+                [gameState.playerSide === 'left' ? 'leftHero' : 'rightHero']: updatedHero
             }));
 
             animationFrameId = requestAnimationFrame(gameLoop);
@@ -73,7 +73,7 @@ export const usePlayer = (playerSide: PlayerSide) => {
         return () => {
             cancelAnimationFrame(animationFrameId);
         };
-    }, [gameState, updateGameState, playerSide, moveHero]);
+    }, [gameState, updateGameState, moveHero]);
 
     return {};
 };

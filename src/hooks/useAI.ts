@@ -3,13 +3,13 @@ import { useEffect, useRef } from 'react';
 import { useGameContext } from './useGameContext';
 import { PlayerSide } from '../types';
 
-export const useAI = (side: PlayerSide) => {
+export const useAI = (playerSide: PlayerSide) => {
     const { gameState, updateGameState, canvasSize } = useGameContext();
     const directionRef = useRef<1 | -1>(1);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            const hero = gameState[side === 'left' ? 'leftHero' : 'rightHero'];
+            const hero = gameState[playerSide === 'left' ? 'leftHero' : 'rightHero'];
             let newY = hero.position.y + hero.speed * directionRef.current;
 
             if (newY - hero.size.height / 2 <= 0 || newY + hero.size.height / 2 >= canvasSize.height) {
@@ -18,7 +18,7 @@ export const useAI = (side: PlayerSide) => {
             }
 
             updateGameState({
-                [side === 'left' ? 'leftHero' : 'rightHero']: {
+                [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
                     ...hero,
                     position: {
                         x: hero.position.x,
@@ -29,5 +29,5 @@ export const useAI = (side: PlayerSide) => {
         }, 1000 / 60); // 60 FPS
 
         return () => clearInterval(intervalId);
-    }, [gameState, updateGameState, canvasSize, side]);
+    }, [gameState, updateGameState, canvasSize, playerSide]);
 };

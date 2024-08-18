@@ -9,21 +9,21 @@ import {useGameContext} from "../../hooks/useGameContext.tsx";
 const Controls: React.FC = () => {
     const { gameState, updateGameState } = useGameContext();
 
-    const handleSpeedChange = useCallback((side: PlayerSide, value: number) => {
+    const handleSpeedChange = useCallback((playerSide: PlayerSide, value: number) => {
         updateGameState(prevState => ({
             ...prevState,
-            [side === 'left' ? 'leftHero' : 'rightHero']: {
-                ...prevState[side === 'left' ? 'leftHero' : 'rightHero'],
+            [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
+                ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
                 speed: value
             }
         }));
     }, [updateGameState]);
 
-    const handleFireRateChange = useCallback((side: PlayerSide, value: number) => {
+    const handleFireRateChange = useCallback((playerSide: PlayerSide, value: number) => {
         updateGameState(prevState => ({
             ...prevState,
-            [side === 'left' ? 'leftHero' : 'rightHero']: {
-                ...prevState[side === 'left' ? 'leftHero' : 'rightHero'],
+            [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
+                ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
                 fireRate: value
             }
         }));

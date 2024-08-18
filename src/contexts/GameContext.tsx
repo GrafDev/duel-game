@@ -6,7 +6,7 @@ export type GameContextType = {
     updateGameState: (updater: Partial<GameState> | ((prevState: GameState) => GameState)) => void;
     canvasSize: Size;
     playerSide: PlayerSide;
-    setPlayerSide: (side: PlayerSide) => void;
+    setPlayerSide: (playerSide: PlayerSide) => void;
 };
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -49,8 +49,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }, []);
 
-    const setPlayerSide = useCallback((side: PlayerSide) => {
-        setGameState(prevState => ({ ...prevState, playerSide: side }));
+    const setPlayerSide = useCallback((playerSide: PlayerSide) => {
+        setGameState(prevState => ({ ...prevState, playerSide: playerSide }));
     }, []);
 
     const contextValue = useMemo(() => ({

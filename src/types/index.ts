@@ -38,4 +38,3 @@ export type GameState = {
     playerSide: PlayerSide;
 };
 
-// Удаляем дублирующее определение GameContextType, так как оно уже определено в GameContext.tsx

@@ -3,7 +3,7 @@ import { PlayerSide } from '../../types';
 import styles from './PlayerSelection.module.css';
 
 interface PlayerSelectionProps {
-    onSelectSide: (side: PlayerSide) => void;
+    onSelectSide: (playerSide: PlayerSide) => void;
 }
 
 const PlayerSelection: React.FC<PlayerSelectionProps> = ({ onSelectSide }) => {

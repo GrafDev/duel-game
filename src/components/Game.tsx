@@ -12,10 +12,10 @@ const Game: React.FC = () => {
     const { updateGameState, canvasSize } = useGameContext();
     const [gameStarted, setGameStarted] = useState(false);
 
-    const handlePlayerSideSelection = useCallback((side: PlayerSide) => {
+    const handlePlayerSideSelection = useCallback((playerSide: PlayerSide) => {
         updateGameState(prevState => ({
             ...prevState,
-            playerSide: side
+            playerSide
         }));
         setGameStarted(true);
     }, [updateGameState]);

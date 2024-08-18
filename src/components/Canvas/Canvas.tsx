@@ -1,10 +1,10 @@
 // src/components/Canvas/Canvas.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { useCanvas } from '../../hooks/useCanvas';
 import { useGameContext } from '../../hooks/useGameContext';
 import styles from './Canvas.module.css';
 
-const Canvas: React.FC = () => {
+const Canvas: React.FC = memo(() => {
     const { canvasSize } = useGameContext();
     const canvasRef = useCanvas();
 
@@ -16,6 +16,8 @@ const Canvas: React.FC = () => {
             height={canvasSize.height}
         />
     );
-};
+});
+
+Canvas.displayName = 'Canvas';
 
 export default Canvas;

@@ -33,7 +33,7 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
         return (
             <div className={styles[`sliders_${side}`]}>
                 <ControlSlider
-                    label={`${isAI ? 'AI' : 'Player'} Hero Speed`}
+                    label={`${isAI ? "Скорость бега железяки" : 'Скорость бега кожаного мешка'}`}
                     value={hero.speed}
                     onChange={(value) => !isAI && onSpeedChange(side, value)}
                     min={50}
@@ -42,7 +42,7 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
                     disabled={isAI}
                 />
                 <ControlSlider
-                    label={`${isAI ? 'AI' : 'Player'} Hero Fire Rate`}
+                    label={`${isAI ? 'Птыщ-птыщ в секунду из бластра' : 'Пиу-пиу в секунду из водяного пистолетика'}`}
                     value={hero.fireRate}
                     onChange={(value) => !isAI && onFireRateChange(side, value)}
                     min={0.5}
@@ -55,7 +55,7 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
     };
 
     return (
-        <div className={styles.sliders}>
+        <div className={styles.controls}>
             {renderHeroControls(gameState.leftHero, 'left')}
             {renderHeroControls(gameState.rightHero, 'right')}
         </div>

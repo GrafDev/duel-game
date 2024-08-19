@@ -1,5 +1,3 @@
-// src/components/ControlSlider.tsx
-
 import React from 'react';
 import styles from './Controls.module.css';
 
@@ -27,9 +25,10 @@ const ControlSlider: React.FC<ControlSliderProps> = ({
     };
 
     return (
-        <div className={styles.control__slider}>
-            <label>{label}: {value.toFixed(1)}</label>
+        <div className={styles.slider}>
+            <label className={styles.label}>{label}: {value.toFixed(1)}</label>
             <input
+                className={styles.input}
                 type="range"
                 min={min}
                 max={max}

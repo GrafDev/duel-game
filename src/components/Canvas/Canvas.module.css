@@ -1,8 +1,0 @@
-/* src/components/Canvas/Canvas.module.css */
-.canvas {
-    display: block;
-    margin: 0 auto;
-    background-color: black;
-    width: 90vw;
-    height: 70vh;
-}

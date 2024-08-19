@@ -19,6 +19,10 @@ export type Hero = {
     aiDirectionChangeInterval: number;
     aiSpeedChangeInterval: number;
     lastShotTime: number;
+    isHit: boolean;
+    hitTime: number;
+    borderWidth: number;
+    borderColor: string;
 };
 
 export type Spell = {

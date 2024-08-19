@@ -31,7 +31,7 @@ export const useMouseInteraction = () => {
         if (mousePositionRef.current) {
             ctx.save();
             ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 10;
             ctx.beginPath();
             ctx.moveTo(mousePositionRef.current.x - MOUSE_LINE_WIDTH / 2, mousePositionRef.current.y);
             ctx.lineTo(mousePositionRef.current.x + MOUSE_LINE_WIDTH / 2, mousePositionRef.current.y);

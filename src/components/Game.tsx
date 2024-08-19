@@ -6,14 +6,28 @@ import Controls from "./Controls/Controls";
 import styles from './Game.module.css';
 import { useMouseInteraction } from "../hooks/useMouseInteraction";
 
+// Константы для балансировки игры
+const GAME_CONSTANTS = {
+    FPS: 60,
+    HERO_SIZE: 40,
+    SPELL_SIZE: 10,
+    HERO_SPEED: 7.5,
+    SPELL_SPEED:1,
+    DEFAULT_FIRE_RATE: 3,
+    HERO_MIN_SPEED: 1,
+    HERO_MAX_SPEED: 15,
+    FIRE_RATE_MIN: 0.5,
+    FIRE_RATE_MAX: 5,
+};
+
 const DEFAULT_GAME_STATE: GameState = {
     leftHero: {
-        position: { x: 40, y: 100 },
-        size: { width: 40, height: 40 },
+        position: { x: GAME_CONSTANTS.HERO_SIZE, y: 100 },
+        size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
         color: 'yellow',
         spellColor: 'gold',
-        speed: 7.5,  // Увеличено с 2.5 до 7.5
-        fireRate: 3,
+        speed: GAME_CONSTANTS.HERO_SPEED,
+        fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
         direction: -1,
         aiDirectionChangeInterval: 0,
         aiSpeedChangeInterval: 0,
@@ -21,11 +35,11 @@ const DEFAULT_GAME_STATE: GameState = {
     },
     rightHero: {
         position: { x: 720, y: 500 },
-        size: { width: 40, height: 40 },
+        size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
         color: 'green',
         spellColor: 'lightgreen',
-        speed: 7.5,  // Увеличено с 2.5 до 7.5
-        fireRate: 3,
+        speed: GAME_CONSTANTS.HERO_SPEED,
+        fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
         direction: 1,
         aiDirectionChangeInterval: 0,
         aiSpeedChangeInterval: 0,
@@ -42,6 +56,9 @@ const Game: React.FC = () => {
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
     const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
     const { drawMouseLine, getMousePosition } = useMouseInteraction();
+    const [debugMessage, setDebugMessage] = useState<string>('');
+
+    const FPS = 60;
 
     const updateCanvasSize = useCallback(() => {
         const width = Math.floor(window.innerWidth * 0.8);
@@ -79,7 +96,7 @@ const Game: React.FC = () => {
         const gameLoop = setInterval(() => {
             updateGame();
             drawGame(context);
-        }, 1000 / 60); // 60 FPS
+        }, 1000 / FPS);
 
         return () => clearInterval(gameLoop);
     }, [canvasSize, gameStarted]);
@@ -100,21 +117,36 @@ const Game: React.FC = () => {
             // Update AI direction
             if (aiHero.aiDirectionChangeInterval <= 0) {
                 aiHero.direction = Math.random() < 0.5 ? 1 : -1;
-                aiHero.aiDirectionChangeInterval = Math.floor(Math.random() * 120) + 60; // Change direction every 1-3 seconds
+                aiHero.aiDirectionChangeInterval = Math.floor(Math.random() * 120) + 60;
             } else {
                 aiHero.aiDirectionChangeInterval--;
             }
 
             // Update AI speed
             if (aiHero.aiSpeedChangeInterval <= 0) {
-                aiHero.speed = Math.random() * 4 + 1; // Random speed between 1 and 5
-                aiHero.aiSpeedChangeInterval = Math.floor(Math.random() * 300) + 60; // Change speed every 1-6 seconds
+                aiHero.speed = Math.random() * 4 + 1;
+                aiHero.aiSpeedChangeInterval = Math.floor(Math.random() * 300) + 60;
             } else {
                 aiHero.aiSpeedChangeInterval--;
             }
 
             // Update spells
-            newState.spells = updateSpells(newState);
+            const { updatedSpells, leftHit, rightHit } = updateSpells(newState);
+            newState.spells = updatedSpells;
+
+            if (leftHit) {
+                newState.score.right++;
+                const message = `Hit! Right hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`;
+                setDebugMessage(message);
+                console.log(message);
+            }
+
+            if (rightHit) {
+                newState.score.left++;
+                const message = `Hit! Left hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`;
+                setDebugMessage(message);
+                console.log(message);
+            }
 
             return newState;
         });
@@ -122,7 +154,7 @@ const Game: React.FC = () => {
 
     const updateHeroPosition = (hero: Hero, side: 'left' | 'right', mousePosition: Position | null, playerSide: PlayerSide): Hero => {
         const newHero = { ...hero };
-        let newY = hero.position.y + hero.speed * hero.direction * 0.3; // Увеличено с 0.1 до 0.3
+        let newY = hero.position.y + hero.speed * hero.direction * 0.3;
 
         const isPlayerControlled = (side === playerSide);
 
@@ -141,7 +173,6 @@ const Game: React.FC = () => {
                 const vectorY = heroCenter.y - mousePosition.y;
 
                 const length = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-                const normalizedX = vectorX / length;
                 const normalizedY = vectorY / length;
 
                 newY = mousePosition.y + normalizedY * hero.size.height / 2 - hero.size.height / 2;
@@ -164,55 +195,78 @@ const Game: React.FC = () => {
         return newHero;
     };
 
-    const updateSpells = (state: GameState): Spell[] => {
+
+    const updateSpellPosition = (spell: Spell): Position => {
+        const distancePerFrame = GAME_CONSTANTS.SPELL_SPEED;
+        const newX = spell.position.x + (spell.direction === 'right' ? distancePerFrame : -distancePerFrame);
+
+        console.log(`Spell moved from ${spell.position.x} to ${newX}. Distance: ${Math.abs(newX - spell.position.x)}`);
+
+        return {
+            x: newX,
+            y: spell.position.y
+        };
+    };
+
+    const updateSpells = (state: GameState): { updatedSpells: Spell[], leftHit: boolean, rightHit: boolean } => {
+        let leftHit = false;
+        let rightHit = false;
         const updatedSpells = state.spells.filter(spell => {
             const newPosition = updateSpellPosition(spell);
-            if (checkSpellCollision(newPosition, state.leftHero)) {
-                state.score.right++;
-                return false;
+
+            const isLeftSpell = spell.direction === 'right';
+            const creator = isLeftSpell ? state.leftHero : state.rightHero;
+            const target = isLeftSpell ? state.rightHero : state.leftHero;
+            const distanceFromCreator = Math.abs(newPosition.x - creator.position.x);
+
+            if (distanceFromCreator < creator.size.width * 2) {
+                spell.position = newPosition;
+                return true;
             }
-            if (checkSpellCollision(newPosition, state.rightHero)) {
-                state.score.left++;
+
+            if (checkSpellCollision(newPosition, target)) {
+                if (isLeftSpell) {
+                    rightHit = true;
+                } else {
+                    leftHit = true;
+                }
                 return false;
             }
             spell.position = newPosition;
             return true;
         });
 
-        // Add new spells
         ['left', 'right'].forEach(side => {
             const hero = side === 'left' ? state.leftHero : state.rightHero;
-            if (Math.random() < hero.fireRate / 100) {
+            if (Date.now() - hero.lastShotTime > 1000 / hero.fireRate) {
                 updatedSpells.push({
                     position: {
-                        x: hero.position.x + hero.size.width / 2,
+                        x: hero.position.x + (side === 'left' ? hero.size.width : 0),
                         y: hero.position.y + hero.size.height / 2
                     },
-                    size: { width: 10, height: 10 },
+                    size: { width: GAME_CONSTANTS.SPELL_SIZE, height: GAME_CONSTANTS.SPELL_SIZE },
                     color: hero.spellColor,
                     direction: side === 'left' ? 'right' : 'left'
                 });
+                hero.lastShotTime = Date.now();
             }
         });
 
-        return updatedSpells;
+        return { updatedSpells, leftHit, rightHit };
     };
-
-    const updateSpellPosition = (spell: Spell): Position => {
-        const speed = 6; // Увеличено с 2 до 6
-        return {
-            x: spell.position.x + (spell.direction === 'right' ? speed : -speed),
-            y: spell.position.y
-        };
-    };
-
     const checkSpellCollision = (spellPosition: Position, hero: Hero): boolean => {
-        return (
+        const collision = (
             spellPosition.x < hero.position.x + hero.size.width &&
             spellPosition.x + 10 > hero.position.x &&
             spellPosition.y < hero.position.y + hero.size.height &&
             spellPosition.y + 10 > hero.position.y
         );
+
+        if (collision) {
+            console.log(`Collision detected at position: (${spellPosition.x}, ${spellPosition.y})`);
+        }
+
+        return collision;
     };
 
     const drawGame = (context: CanvasRenderingContext2D) => {
@@ -227,6 +281,10 @@ const Game: React.FC = () => {
         gameState.spells.forEach(spell => drawSpell(context, spell));
 
         drawMouseLine(context);
+
+        context.fillStyle = 'black';
+        context.font = '14px Arial';
+        context.fillText(debugMessage, 10, 20);
     };
 
     const drawHero = (context: CanvasRenderingContext2D, hero: Hero) => {
@@ -287,7 +345,7 @@ const Game: React.FC = () => {
             ...prevState,
             [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
                 ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
-                speed: value * 3 // Увеличиваем скорость в 3 раза
+                speed: Math.max(GAME_CONSTANTS.HERO_MIN_SPEED, Math.min(GAME_CONSTANTS.HERO_MAX_SPEED, value))
             }
         }));
     }, []);
@@ -297,7 +355,7 @@ const Game: React.FC = () => {
             ...prevState,
             [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
                 ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
-                fireRate: value
+                fireRate: Math.max(GAME_CONSTANTS.FIRE_RATE_MIN, Math.min(GAME_CONSTANTS.FIRE_RATE_MAX, value))
             }
         }));
     }, []);

@@ -1,0 +1,51 @@
+.colorMenu {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px solid #333;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.colorMenuLeft {
+    left: 25%;
+    transform: translate(-50%, -50%);
+}
+
+.colorMenuRight {
+    left: 75%;
+    transform: translate(-50%, -50%);
+}
+
+.title {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    color: #333;
+    text-align: center;
+}
+
+.colorGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    justify-content: center;
+}
+
+.colorOption {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+}
+
+.colorOption:hover {
+    transform: scale(1.1);
+}
+
+.colorOptionSelected {
+    border: 3px solid #333;
+}

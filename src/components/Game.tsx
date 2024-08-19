@@ -5,6 +5,7 @@ import PlayerSelection from "./PlayerSelection/PlayerSelection";
 import Controls from "./Controls/Controls";
 import styles from './Game.module.css';
 import {useMouseInteraction} from "../hooks/useMouseInteraction";
+import ColorMenu from "./ColorMenu/ColorMenu.tsx";
 
 const GAME_CONSTANTS = {
     FPS: 60,
@@ -59,6 +60,7 @@ const Game: React.FC = () => {
     const {drawMouseLine, getMousePosition} = useMouseInteraction();
     const lastUpdateTimeRef = useRef<number>(Date.now());
     const animationFrameRef = useRef<number>();
+    const [openColorMenu, setOpenColorMenu] = useState<PlayerSide | null>(null);
 
     const updateCanvasSize = useCallback(() => {
         const width = Math.floor(window.innerWidth * GAME_CONSTANTS.CANVAS_WIDTH_RATIO);
@@ -231,6 +233,19 @@ const Game: React.FC = () => {
         });
     }, [getMousePosition, updateHeroPosition, updateSpells]);
 
+    const handleSideClick = useCallback((side: PlayerSide) => {
+        setOpenColorMenu(prevSide => prevSide === side ? null : side);
+    }, []);
+
+    const handleColorChange = useCallback((side: PlayerSide, color: string) => {
+        setGameState(prevState => ({
+            ...prevState,
+            [side === 'left' ? 'leftHero' : 'rightHero']: {
+                ...prevState[side === 'left' ? 'leftHero' : 'rightHero'],
+                spellColor: color
+            }
+        }));
+    }, []);
     const drawGame = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -283,7 +298,18 @@ const Game: React.FC = () => {
 
         context.fillStyle = 'black';
         context.font = '14px Arial';
-    }, [canvasSize.height, canvasSize.width, drawMouseLine, gameState]);
+        drawMouseLine(context);
+        canvas.onclick = (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+
+            if (x < canvasSize.width / 2) {
+                handleSideClick('left');
+            } else {
+                handleSideClick('right');
+            }
+        };
+    }, [canvasSize.width, canvasSize.height, gameState, drawMouseLine, handleSideClick]);
 
     useEffect(() => {
         if (!gameStarted) return;
@@ -347,7 +373,6 @@ const Game: React.FC = () => {
     if (!gameStarted) {
         return <PlayerSelection onSelectSide={handleSelectSide}/>;
     }
-
     return (
         <div className={styles.game}>
             <ScoreBoard gameState={gameState} handleExit={handleExit}/>
@@ -359,11 +384,18 @@ const Game: React.FC = () => {
                     style={{
                         border: '2px solid black',
                         marginTop: '20px',
-                        cursor: 'none' // Скрываем курсор по умолчанию
+                        cursor: 'pointer'
                     }}
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                 />
+                {openColorMenu && (
+                    <ColorMenu
+                        side={openColorMenu}
+                        currentColor={gameState[openColorMenu === 'left' ? 'leftHero' : 'rightHero'].spellColor}
+                        onColorChange={handleColorChange}
+                    />
+                )}
             </div>
             <div className={styles.controls}>
                 <Controls

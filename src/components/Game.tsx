@@ -12,7 +12,7 @@ const DEFAULT_GAME_STATE: GameState = {
         size: { width: 40, height: 40 },
         color: 'yellow',
         spellColor: 'gold',
-        speed: 5,
+        speed: 7.5,  // Увеличено с 2.5 до 7.5
         fireRate: 3,
         direction: -1,
         aiDirectionChangeInterval: 0,
@@ -23,7 +23,7 @@ const DEFAULT_GAME_STATE: GameState = {
         size: { width: 40, height: 40 },
         color: 'green',
         spellColor: 'lightgreen',
-        speed: 5,
+        speed: 7.5,  // Увеличено с 2.5 до 7.5
         fireRate: 3,
         direction: 1,
         aiDirectionChangeInterval: 0,
@@ -91,8 +91,11 @@ const Game: React.FC = () => {
             newState.leftHero = updateHeroPosition(newState.leftHero, 'left', mousePosition, newState.playerSide);
             newState.rightHero = updateHeroPosition(newState.rightHero, 'right', mousePosition, newState.playerSide);
 
-            // Update AI hero direction
-            const aiHero = newState.playerSide === 'left' ? newState.rightHero : newState.leftHero;
+            // Update AI hero
+            const aiSide = newState.playerSide === 'left' ? 'right' : 'left';
+            const aiHero = aiSide === 'left' ? newState.leftHero : newState.rightHero;
+
+            // Update AI direction
             if (aiHero.aiDirectionChangeInterval <= 0) {
                 aiHero.direction = Math.random() < 0.5 ? 1 : -1;
                 aiHero.aiDirectionChangeInterval = Math.floor(Math.random() * 120) + 60; // Change direction every 1-3 seconds
@@ -100,19 +103,16 @@ const Game: React.FC = () => {
                 aiHero.aiDirectionChangeInterval--;
             }
 
-            newState.spells = newState.spells.filter(spell => {
-                const newPosition = updateSpellPosition(spell);
-                if (checkSpellCollision(newPosition, newState.leftHero)) {
-                    newState.score.right++;
-                    return false;
-                }
-                if (checkSpellCollision(newPosition, newState.rightHero)) {
-                    newState.score.left++;
-                    return false;
-                }
-                spell.position = newPosition;
-                return true;
-            });
+            // Update AI speed
+            if (aiHero.aiSpeedChangeInterval <= 0) {
+                aiHero.speed = Math.random() * 4 + 1; // Random speed between 1 and 5
+                aiHero.aiSpeedChangeInterval = Math.floor(Math.random() * 300) + 60; // Change speed every 1-6 seconds
+            } else {
+                aiHero.aiSpeedChangeInterval--;
+            }
+
+            // Update spells
+            newState.spells = updateSpells(newState);
 
             return newState;
         });
@@ -120,7 +120,7 @@ const Game: React.FC = () => {
 
     const updateHeroPosition = (hero: Hero, side: 'left' | 'right', mousePosition: Position | null, playerSide: PlayerSide): Hero => {
         const newHero = { ...hero };
-        let newY = hero.position.y + hero.speed * hero.direction;
+        let newY = hero.position.y + hero.speed * hero.direction * 0.3; // Увеличено с 0.1 до 0.3
 
         const isPlayerControlled = (side === playerSide);
 
@@ -162,8 +162,42 @@ const Game: React.FC = () => {
         return newHero;
     };
 
+    const updateSpells = (state: GameState): Spell[] => {
+        const updatedSpells = state.spells.filter(spell => {
+            const newPosition = updateSpellPosition(spell);
+            if (checkSpellCollision(newPosition, state.leftHero)) {
+                state.score.right++;
+                return false;
+            }
+            if (checkSpellCollision(newPosition, state.rightHero)) {
+                state.score.left++;
+                return false;
+            }
+            spell.position = newPosition;
+            return true;
+        });
+
+        // Add new spells
+        ['left', 'right'].forEach(side => {
+            const hero = side === 'left' ? state.leftHero : state.rightHero;
+            if (Math.random() < hero.fireRate / 100) {
+                updatedSpells.push({
+                    position: {
+                        x: hero.position.x + hero.size.width / 2,
+                        y: hero.position.y + hero.size.height / 2
+                    },
+                    size: { width: 10, height: 10 },
+                    color: hero.spellColor,
+                    direction: side === 'left' ? 'right' : 'left'
+                });
+            }
+        });
+
+        return updatedSpells;
+    };
+
     const updateSpellPosition = (spell: Spell): Position => {
-        const speed = 10;
+        const speed = 6; // Увеличено с 2 до 6
         return {
             x: spell.position.x + (spell.direction === 'right' ? speed : -speed),
             y: spell.position.y
@@ -251,7 +285,7 @@ const Game: React.FC = () => {
             ...prevState,
             [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
                 ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
-                speed: value
+                speed: value * 3 // Увеличиваем скорость в 3 раза
             }
         }));
     }, []);

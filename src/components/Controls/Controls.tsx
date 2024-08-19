@@ -14,13 +14,13 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
 
     useEffect(() => {
         const aiControlInterval = setInterval(() => {
-            if (Math.random() < 1/10) { // 1/30 chance of change
-                const randomSpeed = Math.random() * 9 + 1; // Random speed between 1 and 10
+            if (Math.random() < 1/30) {
+                const randomSpeed = (Math.random() * 4 + 1) * 3; // Random speed between 3 and 15
                 const randomFireRate = Math.random() * 4.5 + 0.5; // Random fire rate between 0.5 and 5
-                onSpeedChange(aiSide, randomSpeed);
+                onSpeedChange(aiSide, randomSpeed / 3); // Divide by 3 because handleSpeedChange multiplies by 3
                 onFireRateChange(aiSide, randomFireRate);
             }
-        }, 500); // Check every second
+        }, 1000);
 
         return () => clearInterval(aiControlInterval);
     }, [aiSide, onSpeedChange, onFireRateChange]);
@@ -30,15 +30,16 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
         return (
             <div className={styles[`sliders_${side}`]}>
                 <ControlSlider
-                    label={`${isAI ? 'Скорость железяки' : 'Скорость кожаного мешка'}`}
-                    value={hero.speed}
+                    label={`${isAI ? 'AI' : 'Player'} Hero Speed`}
+                    value={hero.speed / 3} // Divide by 3 to show correct value on slider
                     onChange={(value) => !isAI && onSpeedChange(side, value)}
                     min={1}
-                    max={10}
+                    max={5}
+                    step={0.1}
                     disabled={isAI}
                 />
                 <ControlSlider
-                    label={`${isAI ? 'Скрость птыщ-птыщ железяки' : 'Скорость пиу-пиу кожаного мешка'}`}
+                    label={`${isAI ? 'AI' : 'Player'} Hero Fire Rate`}
                     value={hero.fireRate}
                     onChange={(value) => !isAI && onFireRateChange(side, value)}
                     min={0.5}

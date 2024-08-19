@@ -6,75 +6,63 @@ import Controls from "./Controls/Controls";
 import styles from './Game.module.css';
 import { useMouseInteraction } from "../hooks/useMouseInteraction";
 
-// Константы для балансировки игры
 const GAME_CONSTANTS = {
     FPS: 60,
     HERO_SIZE: 40,
     SPELL_SIZE: 10,
-    HERO_SPEED: 7.5,
-    SPELL_SPEED:1,
+    HERO_SPEED: 100,  // pixels per second
+    SPELL_SPEED: 100, // pixels per second
     DEFAULT_FIRE_RATE: 3,
-    HERO_MIN_SPEED: 1,
-    HERO_MAX_SPEED: 15,
+    HERO_MIN_SPEED: 100,
+    HERO_MAX_SPEED: 500,
     FIRE_RATE_MIN: 0.5,
     FIRE_RATE_MAX: 5,
+    CANVAS_WIDTH_RATIO: 0.8,
+    CANVAS_HEIGHT_RATIO: 0.7,
 };
 
-const DEFAULT_GAME_STATE: GameState = {
-    leftHero: {
-        position: { x: GAME_CONSTANTS.HERO_SIZE, y: 100 },
-        size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
-        color: 'yellow',
-        spellColor: 'gold',
-        speed: GAME_CONSTANTS.HERO_SPEED,
-        fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
-        direction: -1,
-        aiDirectionChangeInterval: 0,
-        aiSpeedChangeInterval: 0,
-        lastShotTime: 0
+const createHero = (side: 'left' | 'right', canvasWidth: number, canvasHeight: number): Hero => ({
+    position: {
+        x: side === 'left' ? GAME_CONSTANTS.HERO_SIZE : canvasWidth - GAME_CONSTANTS.HERO_SIZE * 2,
+        y: canvasHeight / 2
     },
-    rightHero: {
-        position: { x: 720, y: 500 },
-        size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
-        color: 'green',
-        spellColor: 'lightgreen',
-        speed: GAME_CONSTANTS.HERO_SPEED,
-        fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
-        direction: 1,
-        aiDirectionChangeInterval: 0,
-        aiSpeedChangeInterval: 0,
-        lastShotTime: 0
-    },
+    size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
+    color: side === 'left' ? 'yellow' : 'green',
+    spellColor: side === 'left' ? 'gold' : 'lightgreen',
+    speed: GAME_CONSTANTS.HERO_SPEED,
+    fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
+    direction: side === 'left' ? -1 : 1,
+    aiDirectionChangeInterval: 0,
+    aiSpeedChangeInterval: 0,
+    lastShotTime: 0
+});
+
+const createInitialGameState = (canvasWidth: number, canvasHeight: number): GameState => ({
+    leftHero: createHero('left', canvasWidth, canvasHeight),
+    rightHero: createHero('right', canvasWidth, canvasHeight),
     spells: [],
     score: { left: 0, right: 0 },
     playerSide: 'left' as PlayerSide
-};
+});
 
 const Game: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [gameStarted, setGameStarted] = useState(false);
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-    const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
+    const [gameState, setGameState] = useState<GameState>(() => createInitialGameState(canvasSize.width, canvasSize.height));
     const { drawMouseLine, getMousePosition } = useMouseInteraction();
     const [debugMessage, setDebugMessage] = useState<string>('');
-
-    const FPS = 60;
+    const lastUpdateTimeRef = useRef<number>(Date.now());
+    const animationFrameRef = useRef<number>();
 
     const updateCanvasSize = useCallback(() => {
-        const width = Math.floor(window.innerWidth * 0.8);
-        const height = Math.floor(window.innerHeight * 0.7);
+        const width = Math.floor(window.innerWidth * GAME_CONSTANTS.CANVAS_WIDTH_RATIO);
+        const height = Math.floor(window.innerHeight * GAME_CONSTANTS.CANVAS_HEIGHT_RATIO);
         setCanvasSize({ width, height });
-
         setGameState(prevState => ({
             ...prevState,
-            leftHero: {
-                ...prevState.leftHero,
-                position: { x: prevState.leftHero.size.width, y: height / 2 }
-            },
-            rightHero: {
-                ...prevState.rightHero,
-                position: { x: width - prevState.rightHero.size.width * 2, y: height / 2 }
-            }
+            leftHero: { ...prevState.leftHero, position: { x: GAME_CONSTANTS.HERO_SIZE, y: height / 2 } },
+            rightHero: { ...prevState.rightHero, position: { x: width - GAME_CONSTANTS.HERO_SIZE * 2, y: height / 2 } }
         }));
     }, []);
 
@@ -84,77 +72,9 @@ const Game: React.FC = () => {
         return () => window.removeEventListener('resize', updateCanvasSize);
     }, [updateCanvasSize]);
 
-    useEffect(() => {
-        if (!gameStarted) return;
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const context = canvas.getContext('2d');
-        if (!context) return;
-
-        const gameLoop = setInterval(() => {
-            updateGame();
-            drawGame(context);
-        }, 1000 / FPS);
-
-        return () => clearInterval(gameLoop);
-    }, [canvasSize, gameStarted]);
-
-    const updateGame = () => {
-        setGameState(prevState => {
-            const newState = { ...prevState };
-
-            const mousePosition = getMousePosition();
-
-            newState.leftHero = updateHeroPosition(newState.leftHero, 'left', mousePosition, newState.playerSide);
-            newState.rightHero = updateHeroPosition(newState.rightHero, 'right', mousePosition, newState.playerSide);
-
-            // Update AI hero
-            const aiSide = newState.playerSide === 'left' ? 'right' : 'left';
-            const aiHero = aiSide === 'left' ? newState.leftHero : newState.rightHero;
-
-            // Update AI direction
-            if (aiHero.aiDirectionChangeInterval <= 0) {
-                aiHero.direction = Math.random() < 0.5 ? 1 : -1;
-                aiHero.aiDirectionChangeInterval = Math.floor(Math.random() * 120) + 60;
-            } else {
-                aiHero.aiDirectionChangeInterval--;
-            }
-
-            // Update AI speed
-            if (aiHero.aiSpeedChangeInterval <= 0) {
-                aiHero.speed = Math.random() * 4 + 1;
-                aiHero.aiSpeedChangeInterval = Math.floor(Math.random() * 300) + 60;
-            } else {
-                aiHero.aiSpeedChangeInterval--;
-            }
-
-            // Update spells
-            const { updatedSpells, leftHit, rightHit } = updateSpells(newState);
-            newState.spells = updatedSpells;
-
-            if (leftHit) {
-                newState.score.right++;
-                const message = `Hit! Right hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`;
-                setDebugMessage(message);
-                console.log(message);
-            }
-
-            if (rightHit) {
-                newState.score.left++;
-                const message = `Hit! Left hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`;
-                setDebugMessage(message);
-                console.log(message);
-            }
-
-            return newState;
-        });
-    };
-
-    const updateHeroPosition = (hero: Hero, side: 'left' | 'right', mousePosition: Position | null, playerSide: PlayerSide): Hero => {
+    const updateHeroPosition = useCallback((hero: Hero, side: 'left' | 'right', mousePosition: Position | null, playerSide: PlayerSide, deltaTime: number): Hero => {
         const newHero = { ...hero };
-        let newY = hero.position.y + hero.speed * hero.direction * 0.3;
+        let newY = hero.position.y + hero.speed * hero.direction * deltaTime;
 
         const isPlayerControlled = (side === playerSide);
 
@@ -169,14 +89,11 @@ const Game: React.FC = () => {
             );
 
             if (distanceToMouse <= hero.size.width / 2) {
-                const vectorX = heroCenter.x - mousePosition.x;
                 const vectorY = heroCenter.y - mousePosition.y;
-
-                const length = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+                const length = Math.abs(vectorY);
                 const normalizedY = vectorY / length;
 
                 newY = mousePosition.y + normalizedY * hero.size.height / 2 - hero.size.height / 2;
-
                 newHero.direction = normalizedY > 0 ? 1 : -1;
             }
         }
@@ -190,48 +107,44 @@ const Game: React.FC = () => {
         }
 
         newHero.position.y = newY;
-        newHero.position.x = side === 'left' ? hero.size.width : canvasSize.width - hero.size.width * 2;
+        newHero.position.x = side === 'left' ? GAME_CONSTANTS.HERO_SIZE : canvasSize.width - GAME_CONSTANTS.HERO_SIZE * 2;
 
         return newHero;
-    };
+    }, [canvasSize.height, canvasSize.width]);
 
+    const createNewSpell = useCallback((hero: Hero, side: 'left' | 'right'): Spell => ({
+        position: {
+            x: hero.position.x + (side === 'left' ? hero.size.width : 0),
+            y: hero.position.y + hero.size.height / 2
+        },
+        size: { width: GAME_CONSTANTS.SPELL_SIZE, height: GAME_CONSTANTS.SPELL_SIZE },
+        color: hero.spellColor,
+        direction: side === 'left' ? 'right' : 'left'
+    }), []);
 
-    const updateSpellPosition = (spell: Spell): Position => {
-        const distancePerFrame = GAME_CONSTANTS.SPELL_SPEED;
-        const newX = spell.position.x + (spell.direction === 'right' ? distancePerFrame : -distancePerFrame);
-
-        console.log(`Spell moved from ${spell.position.x} to ${newX}. Distance: ${Math.abs(newX - spell.position.x)}`);
-
-        return {
-            x: newX,
-            y: spell.position.y
-        };
-    };
-
-    const updateSpells = (state: GameState): { updatedSpells: Spell[], leftHit: boolean, rightHit: boolean } => {
+    const updateSpells = useCallback((state: GameState, deltaTime: number): { updatedSpells: Spell[], leftHit: boolean, rightHit: boolean } => {
         let leftHit = false;
         let rightHit = false;
         const updatedSpells = state.spells.filter(spell => {
-            const newPosition = updateSpellPosition(spell);
+            const newX = spell.position.x + (spell.direction === 'right' ? 1 : -1) * GAME_CONSTANTS.SPELL_SPEED * deltaTime;
+            const newPosition = { ...spell.position, x: newX };
 
             const isLeftSpell = spell.direction === 'right';
-            const creator = isLeftSpell ? state.leftHero : state.rightHero;
             const target = isLeftSpell ? state.rightHero : state.leftHero;
-            const distanceFromCreator = Math.abs(newPosition.x - creator.position.x);
 
-            if (distanceFromCreator < creator.size.width * 2) {
-                spell.position = newPosition;
-                return true;
-            }
-
-            if (checkSpellCollision(newPosition, target)) {
-                if (isLeftSpell) {
-                    rightHit = true;
-                } else {
-                    leftHit = true;
-                }
+            if (
+                newPosition.x < target.position.x + target.size.width &&
+                newPosition.x + spell.size.width > target.position.x &&
+                newPosition.y < target.position.y + target.size.height &&
+                newPosition.y + spell.size.height > target.position.y
+            ) {
+                if (isLeftSpell) rightHit = true;
+                else leftHit = true;
                 return false;
             }
+
+            if (newX < 0 || newX > canvasSize.width) return false;
+
             spell.position = newPosition;
             return true;
         });
@@ -239,106 +152,141 @@ const Game: React.FC = () => {
         ['left', 'right'].forEach(side => {
             const hero = side === 'left' ? state.leftHero : state.rightHero;
             if (Date.now() - hero.lastShotTime > 1000 / hero.fireRate) {
-                updatedSpells.push({
-                    position: {
-                        x: hero.position.x + (side === 'left' ? hero.size.width : 0),
-                        y: hero.position.y + hero.size.height / 2
-                    },
-                    size: { width: GAME_CONSTANTS.SPELL_SIZE, height: GAME_CONSTANTS.SPELL_SIZE },
-                    color: hero.spellColor,
-                    direction: side === 'left' ? 'right' : 'left'
-                });
+                updatedSpells.push(createNewSpell(hero, side as 'left' | 'right'));
                 hero.lastShotTime = Date.now();
             }
         });
 
         return { updatedSpells, leftHit, rightHit };
-    };
-    const checkSpellCollision = (spellPosition: Position, hero: Hero): boolean => {
-        const collision = (
-            spellPosition.x < hero.position.x + hero.size.width &&
-            spellPosition.x + 10 > hero.position.x &&
-            spellPosition.y < hero.position.y + hero.size.height &&
-            spellPosition.y + 10 > hero.position.y
-        );
+    }, [canvasSize.width, createNewSpell]);
 
-        if (collision) {
-            console.log(`Collision detected at position: (${spellPosition.x}, ${spellPosition.y})`);
-        }
+    const updateGame = useCallback(() => {
+        const currentTime = Date.now();
+        const deltaTime = (currentTime - lastUpdateTimeRef.current) / 1000;
+        lastUpdateTimeRef.current = currentTime;
 
-        return collision;
-    };
+        setGameState(prevState => {
+            const newState = { ...prevState };
+            const mousePosition = getMousePosition();
 
-    const drawGame = (context: CanvasRenderingContext2D) => {
+            newState.leftHero = updateHeroPosition(newState.leftHero, 'left', mousePosition, newState.playerSide, deltaTime);
+            newState.rightHero = updateHeroPosition(newState.rightHero, 'right', mousePosition, newState.playerSide, deltaTime);
+
+            const aiSide = newState.playerSide === 'left' ? 'right' : 'left';
+            const aiHero = aiSide === 'left' ? newState.leftHero : newState.rightHero;
+
+            if (aiHero.aiDirectionChangeInterval <= 0) {
+                aiHero.direction = Math.random() < 0.5 ? 1 : -1;
+                aiHero.aiDirectionChangeInterval = Math.floor(Math.random() * 120) + 60;
+            } else {
+                aiHero.aiDirectionChangeInterval--;
+            }
+
+            if (aiHero.aiSpeedChangeInterval <= 0) {
+                aiHero.speed = Math.random() * (GAME_CONSTANTS.HERO_MAX_SPEED - GAME_CONSTANTS.HERO_MIN_SPEED) + GAME_CONSTANTS.HERO_MIN_SPEED;
+                aiHero.aiSpeedChangeInterval = Math.floor(Math.random() * 300) + 60;
+            } else {
+                aiHero.aiSpeedChangeInterval--;
+            }
+
+            const { updatedSpells, leftHit, rightHit } = updateSpells(newState, deltaTime);
+            newState.spells = updatedSpells;
+
+            if (leftHit) {
+                newState.score.right++;
+                setDebugMessage(`Hit! Right hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`);
+            }
+
+            if (rightHit) {
+                newState.score.left++;
+                setDebugMessage(`Hit! Left hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`);
+            }
+
+            return newState;
+        });
+    }, [getMousePosition, updateHeroPosition, updateSpells]);
+
+    const drawGame = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
         context.clearRect(0, 0, canvasSize.width, canvasSize.height);
-
         context.fillStyle = '#f0f0f0';
         context.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
-        drawHero(context, gameState.leftHero);
-        drawHero(context, gameState.rightHero);
+        const drawHero = (hero: Hero) => {
+            context.fillStyle = hero.color;
+            context.beginPath();
+            context.arc(
+                hero.position.x + hero.size.width / 2,
+                hero.position.y + hero.size.height / 2,
+                hero.size.width / 2,
+                0,
+                2 * Math.PI
+            );
+            context.fill();
+            context.strokeStyle = 'black';
+            context.lineWidth = 2;
+            context.stroke();
+        };
 
-        gameState.spells.forEach(spell => drawSpell(context, spell));
+        const drawSpell = (spell: Spell) => {
+            context.fillStyle = spell.color;
+            context.beginPath();
+            context.arc(
+                spell.position.x + spell.size.width / 2,
+                spell.position.y + spell.size.height / 2,
+                spell.size.width / 2,
+                0,
+                2 * Math.PI
+            );
+            context.fill();
+            context.strokeStyle = 'black';
+            context.lineWidth = 1;
+            context.stroke();
+        };
+
+        drawHero(gameState.leftHero);
+        drawHero(gameState.rightHero);
+        gameState.spells.forEach(drawSpell);
 
         drawMouseLine(context);
 
         context.fillStyle = 'black';
         context.font = '14px Arial';
         context.fillText(debugMessage, 10, 20);
-    };
+    }, [canvasSize.height, canvasSize.width, debugMessage, drawMouseLine, gameState]);
 
-    const drawHero = (context: CanvasRenderingContext2D, hero: Hero) => {
-        context.fillStyle = hero.color;
-        context.beginPath();
-        context.arc(
-            hero.position.x + hero.size.width / 2,
-            hero.position.y + hero.size.height / 2,
-            hero.size.width / 2,
-            0,
-            2 * Math.PI
-        );
-        context.fill();
-        context.strokeStyle = 'black';
-        context.lineWidth = 2;
-        context.stroke();
-    };
+    useEffect(() => {
+        if (!gameStarted) return;
 
-    const drawSpell = (context: CanvasRenderingContext2D, spell: Spell) => {
-        context.fillStyle = spell.color;
-        context.beginPath();
-        context.arc(
-            spell.position.x + 5,
-            spell.position.y + 5,
-            5,
-            0,
-            2 * Math.PI
-        );
-        context.fill();
-        context.strokeStyle = 'black';
-        context.lineWidth = 1;
-        context.stroke();
-    };
+        const gameLoop = () => {
+            updateGame();
+            drawGame();
+            animationFrameRef.current = requestAnimationFrame(gameLoop);
+        };
 
-    const handleExit = () => {
-        setGameState(DEFAULT_GAME_STATE);
-        setGameStarted(false);
-    };
+        animationFrameRef.current = requestAnimationFrame(gameLoop);
 
-    const handleSelectSide = (playerSide: PlayerSide) => {
-        setGameState(prevState => ({
-            ...prevState,
-            playerSide: playerSide,
-            leftHero: {
-                ...prevState.leftHero,
-                position: { x: prevState.leftHero.size.width, y: canvasSize.height / 2 }
-            },
-            rightHero: {
-                ...prevState.rightHero,
-                position: { x: canvasSize.width - prevState.rightHero.size.width * 2, y: canvasSize.height / 2 }
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
             }
-        }));
+        };
+    }, [gameStarted, updateGame, drawGame]);
+
+    const handleExit = useCallback(() => {
+        setGameState(createInitialGameState(canvasSize.width, canvasSize.height));
+        setGameStarted(false);
+    }, [canvasSize.height, canvasSize.width]);
+
+    const handleSelectSide = useCallback((playerSide: PlayerSide) => {
+        setGameState(prevState => ({ ...prevState, playerSide }));
         setGameStarted(true);
-    };
+    }, []);
 
     const handleSpeedChange = useCallback((playerSide: PlayerSide, value: number) => {
         setGameState(prevState => ({

@@ -10,11 +10,10 @@ const GAME_CONSTANTS = {
     FPS: 60,
     HERO_SIZE: 40,
     SPELL_SIZE: 10,
-    HERO_SPEED: 100,  // pixels per second
     SPELL_SPEED: 100, // pixels per second
     DEFAULT_FIRE_RATE: 3,
-    HERO_MIN_SPEED: 100,
-    HERO_MAX_SPEED: 500,
+    HERO_MIN_SPEED: 50,
+    HERO_MAX_SPEED: 200,
     FIRE_RATE_MIN: 0.5,
     FIRE_RATE_MAX: 5,
     CANVAS_WIDTH_RATIO: 0.8,
@@ -29,7 +28,7 @@ const createHero = (side: 'left' | 'right', canvasWidth: number, canvasHeight: n
     size: { width: GAME_CONSTANTS.HERO_SIZE, height: GAME_CONSTANTS.HERO_SIZE },
     color: side === 'left' ? 'yellow' : 'green',
     spellColor: side === 'left' ? 'gold' : 'lightgreen',
-    speed: GAME_CONSTANTS.HERO_SPEED,
+    speed: 100,
     fireRate: GAME_CONSTANTS.DEFAULT_FIRE_RATE,
     direction: side === 'left' ? -1 : 1,
     aiDirectionChangeInterval: 0,
@@ -51,7 +50,6 @@ const Game: React.FC = () => {
     const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
     const [gameState, setGameState] = useState<GameState>(() => createInitialGameState(canvasSize.width, canvasSize.height));
     const { drawMouseLine, getMousePosition } = useMouseInteraction();
-    const [debugMessage, setDebugMessage] = useState<string>('');
     const lastUpdateTimeRef = useRef<number>(Date.now());
     const animationFrameRef = useRef<number>();
 
@@ -194,12 +192,10 @@ const Game: React.FC = () => {
 
             if (leftHit) {
                 newState.score.right++;
-                setDebugMessage(`Hit! Right hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`);
             }
 
             if (rightHit) {
                 newState.score.left++;
-                setDebugMessage(`Hit! Left hero scored. New score: Left ${newState.score.left} - Right ${newState.score.right}`);
             }
 
             return newState;
@@ -257,8 +253,7 @@ const Game: React.FC = () => {
 
         context.fillStyle = 'black';
         context.font = '14px Arial';
-        context.fillText(debugMessage, 10, 20);
-    }, [canvasSize.height, canvasSize.width, debugMessage, drawMouseLine, gameState]);
+    }, [canvasSize.height, canvasSize.width,  drawMouseLine, gameState]);
 
     useEffect(() => {
         if (!gameStarted) return;

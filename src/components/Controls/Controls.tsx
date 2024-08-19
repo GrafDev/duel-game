@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import styles from './Controls.module.css';
 import ControlSlider from "./ControlSlider";
-import {GameState, Hero, PlayerSide} from "../../types";
+import { GameState, Hero, PlayerSide } from "../../types";
 
 interface ControlsProps {
     gameState: GameState;
@@ -11,6 +11,22 @@ interface ControlsProps {
 
 const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRateChange }) => {
     const aiSide: PlayerSide = gameState.playerSide === 'left' ? 'right' : 'left';
+    const playerSide: PlayerSide = gameState.playerSide;
+
+    const handleWheel = useCallback((event: WheelEvent) => {
+        event.preventDefault();
+        const delta = event.deltaY > 0 ? -10 : 10;
+        const currentSpeed = gameState[playerSide === 'left' ? 'leftHero' : 'rightHero'].speed;
+        const newSpeed = Math.max(50, Math.min(200, currentSpeed + delta));
+        onSpeedChange(playerSide, newSpeed);
+    }, [gameState, onSpeedChange, playerSide]);
+
+    useEffect(() => {
+        window.addEventListener('wheel', handleWheel, { passive: false });
+        return () => {
+            window.removeEventListener('wheel', handleWheel);
+        };
+    }, [handleWheel]);
 
     const renderHeroControls = (hero: Hero, side: PlayerSide) => {
         const isAI = side === aiSide;
@@ -20,9 +36,9 @@ const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRat
                     label={`${isAI ? 'AI' : 'Player'} Hero Speed`}
                     value={hero.speed}
                     onChange={(value) => !isAI && onSpeedChange(side, value)}
-                    min={1}
-                    max={15}
-                    step={0.1}
+                    min={50}
+                    max={200}
+                    step={10}
                     disabled={isAI}
                 />
                 <ControlSlider

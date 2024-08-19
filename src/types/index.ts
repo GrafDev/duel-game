@@ -18,6 +18,7 @@ export type Hero = {
     direction: 1 | -1;
     aiDirectionChangeInterval: number;
     aiSpeedChangeInterval: number;
+    lastShotTime: number;
 };
 
 export type Spell = {

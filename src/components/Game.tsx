@@ -16,7 +16,8 @@ const DEFAULT_GAME_STATE: GameState = {
         fireRate: 3,
         direction: -1,
         aiDirectionChangeInterval: 0,
-        aiSpeedChangeInterval: 0
+        aiSpeedChangeInterval: 0,
+        lastShotTime: 0
     },
     rightHero: {
         position: { x: 720, y: 500 },
@@ -27,7 +28,8 @@ const DEFAULT_GAME_STATE: GameState = {
         fireRate: 3,
         direction: 1,
         aiDirectionChangeInterval: 0,
-        aiSpeedChangeInterval: 0
+        aiSpeedChangeInterval: 0,
+        lastShotTime: 0
     },
     spells: [],
     score: { left: 0, right: 0 },

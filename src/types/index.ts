@@ -16,6 +16,8 @@ export type Hero = {
     speed: number;
     fireRate: number;
     direction: 1 | -1;
+    aiDirectionChangeInterval: number;
+    aiSpeedChangeInterval: number;
 };
 
 export type Spell = {

@@ -27,6 +27,7 @@
     text-align: center;
 }
 
+
 .colorGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

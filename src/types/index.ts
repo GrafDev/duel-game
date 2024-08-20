@@ -16,6 +16,13 @@ export type Hero = {
     speed: number;
     fireRate: number;
     direction: 1 | -1;
+    aiDirectionChangeInterval: number;
+    aiSpeedChangeInterval: number;
+    lastShotTime: number;
+    isHit: boolean;
+    hitTime: number;
+    borderWidth: number;
+    borderColor: string;
 };
 
 export type Spell = {

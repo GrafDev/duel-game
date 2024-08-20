@@ -9,6 +9,10 @@ interface PlayerSelectionProps {
 const PlayerSelection: React.FC<PlayerSelectionProps> = ({ onSelectSide }) => {
     return (
         <div className={styles.container}>
+            <div className={styles.name} >
+                WB-Duel
+            </div>
+
             <div className={styles.selection}>
                 <h2 className={styles.title}>Choose Your Side</h2>
                 <div className={styles.buttonContainer}>
@@ -24,6 +28,14 @@ const PlayerSelection: React.FC<PlayerSelectionProps> = ({ onSelectSide }) => {
                     >
                         Play as Right Hero
                     </button>
+                </div>
+                <div className={styles.line}>
+                    Вы будете играть за одного из героев.
+                    За другого героя будет играть компьютер.
+                    Вы можете управлять героем, устанавливая перед ним преграду мышью.
+                    Вы так же сможете управлять скоростью своего героя и частотой атаки.
+                    Дополнительно вы можете менять скорость движения героя колесом мышки.
+                    Можно поменять цвет выстрела для героев, кликнув на стороне поля героя.
                 </div>
             </div>
         </div>

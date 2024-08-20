@@ -1,9 +1,9 @@
 .scoreboard {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
     padding: 5px;
-    align-items: center;
     color: #1a1a1a;
 }
 

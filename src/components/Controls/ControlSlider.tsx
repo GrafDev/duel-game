@@ -1,5 +1,3 @@
-// src/components/ControlSlider.tsx
-
 import React from 'react';
 import styles from './Controls.module.css';
 
@@ -10,6 +8,7 @@ interface ControlSliderProps {
     min: number;
     max: number;
     step?: number;
+    disabled?: boolean;
 }
 
 const ControlSlider: React.FC<ControlSliderProps> = ({
@@ -18,24 +17,28 @@ const ControlSlider: React.FC<ControlSliderProps> = ({
                                                          onChange,
                                                          min,
                                                          max,
-                                                         step = 1
+                                                         step = 1,
+                                                         disabled,
                                                      }) => {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         onChange(parseFloat(event.target.value));
     };
 
     return (
-        <div className={styles.control__slider}>
-            <label>{label}: {value.toFixed(1)}</label>
-    <input
-    type="range"
-    min={min}
-    max={max}
-    step={step}
-    value={value}
-    onChange={handleChange}
-    />
-    </div>
-)};
+        <div className={styles.slider}>
+            <label className={styles.label}>{label}: {value.toFixed(1)}</label>
+            <input
+                className={styles.input}
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={handleChange}
+                disabled={disabled}
+            />
+        </div>
+    )
+};
 
 export default ControlSlider;

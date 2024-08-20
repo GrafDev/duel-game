@@ -1,70 +1,63 @@
-// src/components/Controls/Controls.tsx
-
-import React, { useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import styles from './Controls.module.css';
 import ControlSlider from "./ControlSlider";
-import { PlayerSide } from '../../types';
-import {useGameContext} from "../../hooks/useGameContext.tsx";
+import { GameState, Hero, PlayerSide } from "../../types";
 
-const Controls: React.FC = () => {
-    const { gameState, updateGameState } = useGameContext();
+interface ControlsProps {
+    gameState: GameState;
+    onSpeedChange: (playerSide: PlayerSide, value: number) => void;
+    onFireRateChange: (playerSide: PlayerSide, value: number) => void;
+}
 
-    const handleSpeedChange = useCallback((playerSide: PlayerSide, value: number) => {
-        updateGameState(prevState => ({
-            ...prevState,
-            [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
-                ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
-                speed: value
-            }
-        }));
-    }, [updateGameState]);
+const Controls: React.FC<ControlsProps> = ({ gameState, onSpeedChange, onFireRateChange }) => {
+    const aiSide: PlayerSide = gameState.playerSide === 'left' ? 'right' : 'left';
+    const playerSide: PlayerSide = gameState.playerSide;
 
-    const handleFireRateChange = useCallback((playerSide: PlayerSide, value: number) => {
-        updateGameState(prevState => ({
-            ...prevState,
-            [playerSide === 'left' ? 'leftHero' : 'rightHero']: {
-                ...prevState[playerSide === 'left' ? 'leftHero' : 'rightHero'],
-                fireRate: value
-            }
-        }));
-    }, [updateGameState]);
+    const handleWheel = useCallback((event: WheelEvent) => {
+        event.preventDefault();
+        const delta = event.deltaY > 0 ? -10 : 10;
+        const currentSpeed = gameState[playerSide === 'left' ? 'leftHero' : 'rightHero'].speed;
+        const newSpeed = Math.max(50, Math.min(200, currentSpeed + delta));
+        onSpeedChange(playerSide, newSpeed);
+    }, [gameState, onSpeedChange, playerSide]);
+
+    useEffect(() => {
+        window.addEventListener('wheel', handleWheel, { passive: false });
+        return () => {
+            window.removeEventListener('wheel', handleWheel);
+        };
+    }, [handleWheel]);
+
+    const renderHeroControls = (hero: Hero, side: PlayerSide) => {
+        const isAI = side === aiSide;
+        return (
+            <div className={styles[`sliders_${side}`]}>
+                <ControlSlider
+                    label={`${isAI ? "Скорость бега железяки" : 'Скорость бега кожаного мешка'}`}
+                    value={hero.speed}
+                    onChange={(value) => !isAI && onSpeedChange(side, value)}
+                    min={50}
+                    max={200}
+                    step={10}
+                    disabled={isAI}
+                />
+                <ControlSlider
+                    label={`${isAI ? 'Птыщ-птыщ в секунду из бластра' : 'Пиу-пиу в секунду из водяного пистолетика'}`}
+                    value={hero.fireRate}
+                    onChange={(value) => !isAI && onFireRateChange(side, value)}
+                    min={0.5}
+                    max={5}
+                    step={0.1}
+                    disabled={isAI}
+                />
+            </div>
+        );
+    };
 
     return (
-        <div className={styles.sliders}>
-            <div className={styles.sliders_left}>
-                <ControlSlider
-                    label="Скорость левого героя"
-                    value={gameState.leftHero.speed}
-                    onChange={(value) => handleSpeedChange('left', value)}
-                    min={1}
-                    max={10}
-                />
-                <ControlSlider
-                    label="Частота стрельбы левого героя"
-                    value={gameState.leftHero.fireRate}
-                    onChange={(value) => handleFireRateChange('left', value)}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                />
-            </div>
-            <div className={styles.sliders_right}>
-                <ControlSlider
-                    label="Скорость правого героя"
-                    value={gameState.rightHero.speed}
-                    onChange={(value) => handleSpeedChange('right', value)}
-                    min={1}
-                    max={10}
-                />
-                <ControlSlider
-                    label="Частота стрельбы правого героя"
-                    value={gameState.rightHero.fireRate}
-                    onChange={(value) => handleFireRateChange('right', value)}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                />
-            </div>
+        <div className={styles.controls}>
+            {renderHeroControls(gameState.leftHero, 'left')}
+            {renderHeroControls(gameState.rightHero, 'right')}
         </div>
     );
 };
